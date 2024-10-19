@@ -1,13 +1,16 @@
 from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_chroma import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema import SystemMessage, HumanMessage
 import chromadb
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
+llm = ChatOpenAI(model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
 embed_model = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=os.getenv("OPENAI_API_KEY"))
 COLLECTION_NAME = "retail-fundamentals"
 CHROMA_LOCATION = "./.vector-index"
@@ -24,8 +27,8 @@ def ingest_data():
     document = loader.load()
 
     docs = RecursiveCharacterTextSplitter(
-        chunk_size = 50,
-        chunk_overlap = 5,        
+        chunk_size = 500,
+        chunk_overlap = 20,        
     ).split_documents(document)
 
     Chroma.from_documents(
@@ -37,8 +40,19 @@ def ingest_data():
 
 def retrieve(query: str):
     index = Chroma(collection_name=COLLECTION_NAME, embedding_function=embed_model, client=chroma_client)
-    context = index.similarity_search(query=query, k=5)
-    return context
+    context = [i.page_content + "\n" for i in index.similarity_search(query=query, k=5)]
+
+    messages = [
+        SystemMessage(content=f"""
+            You are an expert at retails fundamentals and best practices. Please help answer user questions using the content supplied below.                      
+            Content:
+            {context}
+        """),
+        HumanMessage(content=query)
+    ]
+
+    return llm.invoke(messages).content
+
 
 def create_collection():
     return chroma_client.create_collection(COLLECTION_NAME)
