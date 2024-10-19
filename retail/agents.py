@@ -1,5 +1,6 @@
 from swarm import Agent
 from retail.database import get_schema, run_sql_select_statement
+from retail.collection import retrieve
 import sys
 
 def get_sql_agent_instructions():
@@ -28,14 +29,20 @@ router_agent = Agent(
 
 orders_agent = Agent(
     name = "Order Agent",
-    instructions = get_sql_agent_instructions() + "\n\nHelp the user with data related to orders",
+    instructions = get_sql_agent_instructions() + "\n\nHelp the user with database related questions for orders",
     functions = [run_sql_select_statement]
 )
 
 items_agent = Agent(
     name = "Item Agent",
-    instructions = get_sql_agent_instructions() + "\n\nHelp the user with data related to items",
+    instructions = get_sql_agent_instructions() + "\n\nHelp the user with database related question for items. You do not need to asking questions about processes then it comes to handling items.",
     functions = [run_sql_select_statement]
+)
+
+fundamentals_agent = Agent(
+    name = "Retails Fundamentals Agent",
+    instructions = "Help the user answer retails best practices and fundamentals",
+    functions = [retrieve]
 )
 
 def run_exit():
@@ -56,10 +63,14 @@ def transfer_to_orders_agent():
 def transfer_to_items_agent():
     return items_agent
 
+def transfer_fundamentals_agent():
+    return fundamentals_agent
+
 def transfer_to_exit_agent():
     return exit_agent
 
-router_agent.functions = [transfer_to_items_agent, transfer_to_orders_agent, transfer_to_exit_agent]
+router_agent.functions = [transfer_to_items_agent, transfer_to_orders_agent, transfer_to_exit_agent, transfer_fundamentals_agent]
 orders_agent.functions.append(transfer_back_to_router_agent)
 items_agent.functions.append(transfer_back_to_router_agent)
+fundamentals_agent.functions.append(transfer_to_exit_agent)
 exit_agent.functions.append(transfer_to_exit_agent)
