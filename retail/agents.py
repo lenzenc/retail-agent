@@ -72,5 +72,5 @@ def transfer_to_exit_agent():
 router_agent.functions = [transfer_to_items_agent, transfer_to_orders_agent, transfer_to_exit_agent, transfer_fundamentals_agent]
 orders_agent.functions.append(transfer_back_to_router_agent)
 items_agent.functions.append(transfer_back_to_router_agent)
-fundamentals_agent.functions.append(transfer_to_exit_agent)
+fundamentals_agent.functions.append(transfer_back_to_router_agent)
 exit_agent.functions.append(transfer_to_exit_agent)
